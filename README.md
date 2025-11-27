@@ -79,25 +79,32 @@ Create a `.env` file in the root directory with the following variables:
 ```env
 # Server Configuration
 PORT=5000
+NODE_ENV=development  # or "production"
 
-# Third-Party Socket.IO Configuration
-THIRD_PARTY_WS_URL=wss://your-third-party-url.com
-THIRD_PARTY_WS_PATH=/socket_connect/
+# Third-Party Base URLs (selected based on NODE_ENV)
+THIRD_PARTY_DEV_BASE_URL=http://localhost:8080  # Used when NODE_ENV=development
+THIRD_PARTY_BASE_URL=https://production-url.com  # Used when NODE_ENV=production
+
+# Third-Party Authentication
 THIRD_PARTY_API_KEY=your-api-key
-THIRD_PARTY_ADDRESS=your-address
-THIRD_PARTY_COMPANY_ID=your-company-id
 ```
 
 ### Environment Variables
 
-| Variable                 | Description                           | Required                         |
-| ------------------------ | ------------------------------------- | -------------------------------- |
-| `PORT`                   | Port for the Express server           | No (default: 5000)               |
-| `THIRD_PARTY_WS_URL`     | WebSocket URL for third-party service | Yes                              |
-| `THIRD_PARTY_WS_PATH`    | Socket.IO path                        | No (default: `/socket_connect/`) |
-| `THIRD_PARTY_API_KEY`    | API key for authentication            | Yes                              |
-| `THIRD_PARTY_ADDRESS`    | Address header value                  | Yes                              |
-| `THIRD_PARTY_COMPANY_ID` | Company ID for authentication         | Yes                              |
+| Variable                   | Description                                      | Required                          |
+| -------------------------- | ------------------------------------------------ | --------------------------------- |
+| `PORT`                     | Port for the Express server                      | No (default: 5000)                |
+| `NODE_ENV`                 | Environment mode (`development` or `production`) | No (default: `development`)       |
+| `THIRD_PARTY_DEV_BASE_URL` | Base URL for third-party service (development)   | Yes (when `NODE_ENV=development`) |
+| `THIRD_PARTY_BASE_URL`     | Base URL for third-party service (production)    | Yes (when `NODE_ENV=production`)  |
+| `THIRD_PARTY_API_KEY`      | API key for authentication                       | Yes                               |
+
+**Note**: The server automatically selects the appropriate base URL based on `NODE_ENV`:
+
+- `NODE_ENV=development` → uses `THIRD_PARTY_DEV_BASE_URL`
+- `NODE_ENV=production` → uses `THIRD_PARTY_BASE_URL`
+
+The Socket.IO path is hardcoded to `/socket_connect/` and the API endpoint is `/api/v1/phones/calls/initiate-websocket-call`.
 
 ## 🚀 Usage
 
@@ -306,8 +313,9 @@ custom_be/
 
 ### WebSocket Connection Issues
 
-- Check that `THIRD_PARTY_WS_URL` is correct
-- Verify API keys and authentication headers
+- Check that `THIRD_PARTY_DEV_BASE_URL` or `THIRD_PARTY_BASE_URL` is correct based on `NODE_ENV`
+- Verify `THIRD_PARTY_API_KEY` is set correctly
+- Ensure `NODE_ENV` matches the base URL you want to use
 - Check server logs for connection errors
 
 ### Messages Not Appearing
@@ -328,6 +336,11 @@ custom_be/
 - Message deduplication prevents the same message from appearing multiple times
 - `callMongoId` is used to associate messages with specific calls
 - The frontend automatically handles message arrays and displays them chronologically
+- Base URL selection is automatic based on `NODE_ENV`:
+  - Development mode uses `THIRD_PARTY_DEV_BASE_URL`
+  - Production mode uses `THIRD_PARTY_BASE_URL`
+- Socket.IO path is fixed at `/socket_connect/`
+- API endpoint is fixed at `/api/v1/phones/calls/initiate-websocket-call`
 
 ## 🔐 Security Considerations
 
