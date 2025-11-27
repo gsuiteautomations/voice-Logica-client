@@ -3,12 +3,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export function connectThirdPartySocket() {
-	const socket = io(process.env.THIRD_PARTY_WS_URL, {
+	const socket = io(process.env.THIRD_PARTY_BASE_URL, {
 		path: process.env.THIRD_PARTY_WS_PATH || '/socket_connect/',
 		extraHeaders: {
 			'x-api-key': process.env.THIRD_PARTY_API_KEY,
-			address: process.env.THIRD_PARTY_ADDRESS,
-			'x-company-id': process.env.THIRD_PARTY_COMPANY_ID,
 		},
 		transports: ['websocket'],
 		reconnection: true,

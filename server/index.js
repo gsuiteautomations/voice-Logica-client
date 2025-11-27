@@ -133,7 +133,7 @@ app.post('/initiate-websocket-call', async (req, res) => {
 		};
 
 		// Make request to third-party API
-		const response = await axios.post(`http://localhost:8080/api/v1/phones/calls/initiate-websocket-call`, payload, { headers });
+		const response = await axios.post(`${process.env.THIRD_PARTY_BASE_URL}/api/v1/phones/calls/initiate-websocket-call`, payload, { headers });
 
 		console.log('Third-party API response:', response.data);
 
