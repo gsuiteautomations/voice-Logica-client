@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>WebSocket Message Client</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				padding: 20px;
+			}
+
+			.container {
+				background: white;
+				border-radius: 20px;
+				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+				width: 100%;
+				max-width: 800px;
+				height: 90vh;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+			}
+
+			.header {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				padding: 20px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.header h1 {
+				font-size: 24px;
+				font-weight: 600;
+			}
+
+			.status {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				font-size: 14px;
+			}
+
+			.status-indicator {
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: #4ade80;
+				animation: pulse 2s infinite;
+			}
+
+			.status-indicator.disconnected {
+				background: #ef4444;
+				animation: none;
+			}
+
+			.status-indicator.connecting {
+				background: #fbbf24;
+				animation: pulse 1s infinite;
+			}
+
+			@keyframes pulse {
+				0%,
+				100% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.5;
+				}
+			}
+
+			.messages-container {
+				flex: 1;
+				overflow-y: auto;
+				padding: 20px;
+				background: #f8fafc;
+			}
+
+			.message {
+				margin-bottom: 16px;
+				animation: slideIn 0.3s ease-out;
+			}
+
+			@keyframes slideIn {
+				from {
+					opacity: 0;
+					transform: translateY(10px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			.message-header {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 4px;
+				font-size: 12px;
+				color: #64748b;
+			}
+
+			.message-content {
+				background: white;
+				padding: 12px 16px;
+				border-radius: 12px;
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+				word-wrap: break-word;
+			}
+
+			.message.sent .message-content {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				margin-left: auto;
+				max-width: 70%;
+			}
+
+			.message.received .message-content {
+				background: white;
+				color: #1e293b;
+				max-width: 70%;
+			}
+
+			.message.agent .message-content {
+				background: #e0f2fe;
+				color: #0c4a6e;
+				border-left: 3px solid #0284c7;
+			}
+
+			.message.tool .message-content {
+				background: #fef3c7;
+				color: #78350f;
+				border-left: 3px solid #f59e0b;
+				font-style: italic;
+			}
+
+			.message details {
+				cursor: pointer;
+			}
+
+			.message details summary {
+				user-select: none;
+			}
+
+			.message-data {
+				font-family: 'Courier New', monospace;
+				font-size: 11px;
+				background: #f1f5f9;
+				padding: 8px;
+				border-radius: 6px;
+				margin-top: 8px;
+				overflow-x: auto;
+				white-space: pre-wrap;
+				word-break: break-all;
+			}
+
+			.message.sent .message-data {
+				background: rgba(255, 255, 255, 0.2);
+			}
+
+			.input-container {
+				padding: 20px;
+				background: white;
+				border-top: 1px solid #e2e8f0;
+				display: flex;
+				gap: 12px;
+			}
+
+			.input-container input {
+				flex: 1;
+				padding: 12px 16px;
+				border: 2px solid #e2e8f0;
+				border-radius: 12px;
+				font-size: 14px;
+				outline: none;
+				transition: border-color 0.2s;
+			}
+
+			.input-container input:focus {
+				border-color: #667eea;
+			}
+
+			.input-container button {
+				padding: 12px 24px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				border-radius: 12px;
+				font-size: 14px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+
+			.input-container button:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			}
+
+			.input-container button:active {
+				transform: translateY(0);
+			}
+
+			.input-container button:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+				transform: none;
+			}
+
+			.empty-state {
+				text-align: center;
+				color: #94a3b8;
+				padding: 40px;
+				font-size: 16px;
+			}
+
+			.event-badge {
+				display: inline-block;
+				background: #e0e7ff;
+				color: #4338ca;
+				padding: 2px 8px;
+				border-radius: 4px;
+				font-size: 11px;
+				font-weight: 600;
+				margin-right: 8px;
+			}
+
+			.card-selection {
+				flex: 1;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 30px;
+				padding: 40px;
+			}
+
+			.service-card {
+				background: white;
+				border: 2px solid #e2e8f0;
+				border-radius: 16px;
+				padding: 40px;
+				width: 280px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-align: center;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			}
+
+			.service-card:hover {
+				transform: translateY(-5px);
+				box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+				border-color: #667eea;
+			}
+
+			.service-card:active {
+				transform: translateY(-2px);
+			}
+
+			.service-card.loading {
+				opacity: 0.6;
+				cursor: not-allowed;
+				pointer-events: none;
+			}
+
+			.service-icon {
+				font-size: 48px;
+				margin-bottom: 16px;
+			}
+
+			.service-card h2 {
+				font-size: 24px;
+				font-weight: 600;
+				color: #1e293b;
+				margin-bottom: 8px;
+			}
+
+			.service-card p {
+				font-size: 14px;
+				color: #64748b;
+			}
+
+			.chat-interface {
+				display: none;
+				flex-direction: column;
+				flex: 1;
+				overflow: hidden;
+			}
+
+			.chat-interface.active {
+				display: flex;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="header">
+				<h1>WebSocket Message Client</h1>
+				<div class="status">
+					<div class="status-indicator" id="statusIndicator"></div>
+					<span id="statusText">Not Connected</span>
+				</div>
+			</div>
+
+			<!-- Card Selection Screen -->
+			<div class="card-selection" id="cardSelection">
+				<div class="service-card" id="voiceCard" data-service-type="websocket">
+					<div class="service-icon">🎤</div>
+					<h2>Voice</h2>
+					<p>Start a voice conversation with Web AI</p>
+				</div>
+				<div class="service-card" id="chatCard" data-service-type="message">
+					<div class="service-icon">💬</div>
+					<h2>Chat</h2>
+					<p>Start a text conversation with Web AI</p>
+				</div>
+			</div>
+
+			<!-- Chat Interface -->
+			<div class="chat-interface" id="chatInterface">
+				<div class="messages-container" id="messagesContainer">
+					<div class="empty-state" id="emptyState">No messages yet. Start a conversation!</div>
+				</div>
+
+				<div class="input-container">
+					<input type="text" id="messageInput" placeholder="Type your message here..." disabled />
+					<button id="sendButton" disabled>Send</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+			const wsHost = window.location.host;
+			let ws = null;
+
+			const statusIndicator = document.getElementById('statusIndicator');
+			const statusText = document.getElementById('statusText');
+			const messagesContainer = document.getElementById('messagesContainer');
+			const messageInput = document.getElementById('messageInput');
+			const sendButton = document.getElementById('sendButton');
+			const emptyState = document.getElementById('emptyState');
+			const cardSelection = document.getElementById('cardSelection');
+			const chatInterface = document.getElementById('chatInterface');
+			const voiceCard = document.getElementById('voiceCard');
+			const chatCard = document.getElementById('chatCard');
+
+			let messageCount = 0;
+			let mongoCallId = null;
+			let callId = null;
+			let serviceType = null;
+			// Track displayed messages to prevent duplicates
+			const displayedMessages = new Set();
+
+			// API payload configuration
+			const API_CONFIG = {
+				contextForAi: 'Conversation with Web AI',
+				languageCode: 'el-GR',
+				agentId: '68dd4b06704760ace0a74a3e',
+				// agentId: '68d938359e704cab89d0bf7b',
+				associateId: '',
+				codec: 'PCM16',
+			};
+
+			// Initialize WebSocket connection
+			function initWebSocket() {
+				if (ws && ws.readyState === WebSocket.OPEN) {
+					return; // Already connected
+				}
+
+				ws = new WebSocket(`${wsProtocol}//${wsHost}`);
+				setupWebSocketHandlers();
+			}
+
+			// Setup WebSocket event handlers
+			function setupWebSocketHandlers() {
+				if (!ws) return;
+
+				ws.onopen = () => {
+					updateStatus('connected', 'Connected');
+					messageInput.disabled = false;
+					sendButton.disabled = false;
+					messageInput.focus();
+					addSystemMessage('Connected to WebSocket server');
+				};
+
+				ws.onclose = () => {
+					updateStatus('disconnected', 'Disconnected');
+					messageInput.disabled = true;
+					sendButton.disabled = true;
+					addSystemMessage('Disconnected from WebSocket server');
+				};
+
+				ws.onerror = (error) => {
+					updateStatus('disconnected', 'Error');
+					addSystemMessage('WebSocket error occurred', 'error');
+					console.error('WebSocket error:', error);
+				};
+
+				ws.onmessage = (event) => {
+					try {
+						const data = JSON.parse(event.data);
+						console.log('Received message:', data);
+
+						// Handle callMongoId from server
+						if (data.type === 'callMongoId') {
+							mongoCallId = data.callMongoId;
+							callId = data.callId;
+							console.log('Received callMongoId:', mongoCallId);
+							return;
+						}
+
+						// Handle error messages
+						if (data.type === 'error') {
+							addSystemMessage(data.message || 'An error occurred', 'error');
+							return;
+						}
+
+						// Handle messages array - check all possible locations
+						let messagesArray = null;
+						if (data.messages && Array.isArray(data.messages)) {
+							messagesArray = data.messages;
+						} else if (data.data && data.data.messages && Array.isArray(data.data.messages)) {
+							messagesArray = data.data.messages;
+						}
+
+						if (messagesArray) {
+							displayMessagesArray(messagesArray);
+							return; // Exit early after processing messages
+						}
+
+						if (data.event && data.data) {
+							// Message from websocket-{callId} or other events
+							addMessage(`Event: ${data.event}`, JSON.stringify(data.data, null, 2), 'received', data.callId ? `Call ID: ${data.callId}` : undefined);
+						} else if (data.message) {
+							// Simple text message
+							addMessage(data.message, null, 'received');
+						} else {
+							// Raw data
+							addMessage('Received data', JSON.stringify(data, null, 2), 'received');
+						}
+					} catch (error) {
+						// If not JSON, treat as plain text
+						addMessage('Received message', event.data, 'received');
+					}
+				};
+			}
+
+			// Call initiate-websocket-call API
+			async function initiateCall(serviceTypeValue) {
+				try {
+					// Show loading state
+					voiceCard.classList.add('loading');
+					chatCard.classList.add('loading');
+					updateStatus('connecting', 'Connecting...');
+
+					const payload = {
+						...API_CONFIG,
+						serviceType: serviceTypeValue,
+					};
+
+					console.log('Calling API with payload:', payload);
+
+					const response = await fetch('/initiate-websocket-call', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(payload),
+					});
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(errorData.error || 'Failed to initiate call');
+					}
+
+					const data = await response.json();
+					console.log('API Response:', data);
+
+					// Store response data
+					mongoCallId = data.callMongoId || data.mongoCallId || data.mongoId || data._id;
+					callId = data.callId || data.id || data.connectionId;
+					serviceType = serviceTypeValue;
+
+					// Hide card selection and show chat interface
+					cardSelection.style.display = 'none';
+					chatInterface.classList.add('active');
+
+					// Initialize WebSocket connection
+					initWebSocket();
+
+					// Show success message
+					addSystemMessage(`Successfully started ${serviceTypeValue === 'websocket' ? 'Voice' : 'Chat'} conversation`);
+					updateStatus('connected', 'Connected');
+
+				} catch (error) {
+					console.error('Error initiating call:', error);
+					updateStatus('disconnected', 'Error');
+					addSystemMessage(`Failed to start conversation: ${error.message}`, 'error');
+					voiceCard.classList.remove('loading');
+					chatCard.classList.remove('loading');
+				}
+			}
+
+			// Send message (sends as call-data to third-party socket)
+			function sendMessage() {
+				const message = messageInput.value.trim();
+				if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+				// Create call data payload with the text message
+				const callData = {
+					text: message,
+					timestamp: new Date().toISOString(),
+				};
+
+				ws.send(JSON.stringify(callData));
+				messageInput.value = '';
+			}
+
+			function getMessageId(msg) {
+				// Stable ID independent of timestamp
+				return `${msg.role || ''}::${msg.content || ''}`.trim();
+			}
+
+			function displayMessagesArray(messages) {
+				if (!Array.isArray(messages)) return;
+
+				messages.forEach((msg) => {
+					const uniqueId = getMessageId(msg);
+
+					// Skip duplicates
+					if (displayedMessages.has(uniqueId)) return;
+					displayedMessages.add(uniqueId);
+
+					const role = msg.role || 'Unknown';
+					const content = msg.content || '';
+					const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+					let messageType = 'received';
+					let roleLabel = role;
+
+					if (role === 'Associate') {
+						messageType = 'sent';
+						roleLabel = 'You';
+					} else if (role === 'Agent') {
+						roleLabel = 'Agent';
+					} else if (role === 'Tool') {
+						roleLabel = 'System';
+					}
+
+					let additionalInfo = '';
+					if (msg.seconds !== undefined) additionalInfo += `Seconds: ${msg.seconds} | `;
+					if (msg.completionTurnMs !== undefined) additionalInfo += `Completion: ${msg.completionTurnMs}ms | `;
+					if (msg.voiceTurnMs !== undefined) additionalInfo += `Voice: ${msg.voiceTurnMs}ms | `;
+					if (msg.totalTurnMs !== undefined) additionalInfo += `Total: ${msg.totalTurnMs}ms`;
+
+					addMessageWithRole(content, messageType, roleLabel, timestamp, additionalInfo, msg);
+				});
+			}
+
+			// Add message with role information
+			function addMessageWithRole(text, type, metadata, timestamp, additionalInfo, fullMessage) {
+				emptyState.style.display = 'none';
+				messageCount++;
+
+				const messageDiv = document.createElement('div');
+				// Add role-based class if available
+				const role = fullMessage?.role?.toLowerCase() || '';
+				let className = `message ${type}`;
+				if (role === 'agent') {
+					className += ' agent';
+				} else if (role === 'tool') {
+					className += ' tool';
+				}
+				messageDiv.className = className;
+
+				const header = document.createElement('div');
+				header.className = 'message-header';
+
+				const eventInfo = document.createElement('span');
+				eventInfo.textContent = metadata || (type === 'sent' ? 'You' : 'Server');
+
+				const timeInfo = document.createElement('span');
+				timeInfo.textContent = timestamp;
+
+				header.appendChild(eventInfo);
+				header.appendChild(timeInfo);
+
+				const content = document.createElement('div');
+				content.className = 'message-content';
+				content.textContent = text;
+
+				messageDiv.appendChild(header);
+				messageDiv.appendChild(content);
+
+				// Add additional info if available
+				if (additionalInfo) {
+					const infoDiv = document.createElement('div');
+					infoDiv.className = 'message-data';
+					infoDiv.style.fontSize = '10px';
+					infoDiv.style.opacity = '0.7';
+					infoDiv.textContent = additionalInfo.trim();
+					messageDiv.appendChild(infoDiv);
+				}
+
+				// Add full message data in collapsed format
+				if (fullMessage) {
+					const dataDiv = document.createElement('details');
+					dataDiv.className = 'message-data';
+					dataDiv.style.marginTop = '4px';
+
+					const summary = document.createElement('summary');
+					summary.textContent = 'View details';
+					summary.style.cursor = 'pointer';
+					summary.style.fontSize = '10px';
+					summary.style.opacity = '0.7';
+
+					const pre = document.createElement('pre');
+					pre.textContent = JSON.stringify(fullMessage, null, 2);
+					pre.style.fontSize = '10px';
+					pre.style.marginTop = '4px';
+
+					dataDiv.appendChild(summary);
+					dataDiv.appendChild(pre);
+					messageDiv.appendChild(dataDiv);
+				}
+
+				messagesContainer.appendChild(messageDiv);
+				messagesContainer.scrollTop = messagesContainer.scrollHeight;
+			}
+
+			// Add message to UI
+			function addMessage(text, data, type, metadata) {
+				emptyState.style.display = 'none';
+				messageCount++;
+
+				const messageDiv = document.createElement('div');
+				messageDiv.className = `message ${type}`;
+
+				const header = document.createElement('div');
+				header.className = 'message-header';
+
+				const eventInfo = document.createElement('span');
+				if (metadata) {
+					eventInfo.textContent = metadata;
+				} else {
+					eventInfo.textContent = type === 'sent' ? 'You' : 'Server';
+				}
+
+				const timeInfo = document.createElement('span');
+				timeInfo.textContent = new Date().toLocaleTimeString();
+
+				header.appendChild(eventInfo);
+				header.appendChild(timeInfo);
+
+				const content = document.createElement('div');
+				content.className = 'message-content';
+				content.textContent = text;
+
+				messageDiv.appendChild(header);
+				messageDiv.appendChild(content);
+
+				if (data) {
+					const dataDiv = document.createElement('div');
+					dataDiv.className = 'message-data';
+					dataDiv.textContent = data;
+					messageDiv.appendChild(dataDiv);
+				}
+
+				messagesContainer.appendChild(messageDiv);
+				messagesContainer.scrollTop = messagesContainer.scrollHeight;
+			}
+
+			// Add system message
+			function addSystemMessage(text, type = 'info') {
+				const messageDiv = document.createElement('div');
+				messageDiv.className = 'message received';
+				messageDiv.style.opacity = '0.7';
+
+				const header = document.createElement('div');
+				header.className = 'message-header';
+				header.innerHTML = `<span>System</span><span>${new Date().toLocaleTimeString()}</span>`;
+
+				const content = document.createElement('div');
+				content.className = 'message-content';
+				content.textContent = text;
+				content.style.background = type === 'error' ? '#fee2e2' : '#e0e7ff';
+				content.style.color = type === 'error' ? '#991b1b' : '#4338ca';
+
+				messageDiv.appendChild(header);
+				messageDiv.appendChild(content);
+				messagesContainer.appendChild(messageDiv);
+				messagesContainer.scrollTop = messagesContainer.scrollHeight;
+			}
+
+			// Update status
+			function updateStatus(status, text) {
+				statusIndicator.className = `status-indicator ${status}`;
+				statusText.textContent = text;
+			}
+
+			// Event listeners
+			voiceCard.addEventListener('click', () => {
+				initiateCall('websocket');
+			});
+
+			chatCard.addEventListener('click', () => {
+				initiateCall('message');
+			});
+
+			sendButton.addEventListener('click', sendMessage);
+			messageInput.addEventListener('keypress', (e) => {
+				if (e.key === 'Enter') {
+					sendMessage();
+				}
+			});
+		</script>
+	</body>
+</html>
