@@ -3,8 +3,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export function connectThirdPartySocket() {
-	const socket = io(process.env.THIRD_PARTY_BASE_URL, {
-		path: process.env.THIRD_PARTY_WS_PATH || '/socket_connect/',
+	const baseUrl = process.env.NODE_ENV === 'development' ? process.env.THIRD_PARTY_DEV_BASE_URL : process.env.THIRD_PARTY_BASE_URL;
+	const socket = io(baseUrl, {
+		path: '/socket_connect/',
 		extraHeaders: {
 			'x-api-key': process.env.THIRD_PARTY_API_KEY,
 		},
