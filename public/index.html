@@ -463,7 +463,7 @@
 			const API_CONFIG = {
 				contextForAi: 'Conversation with Web AI',
 				languageCode: 'el-GR',
-				agentId: '68dd4b06704760ace0a74a3e',
+				agentId: '692856a776bb85eee1ee8767',
 				// agentId: '68d938359e704cab89d0bf7b',
 				associateId: '',
 				codec: 'PCM16',
@@ -757,6 +757,14 @@
 				if (!Array.isArray(messages)) return;
 
 				messages.forEach((msg) => {
+					// Filter: only show messages for current call mongo id
+					if (mongoCallId) {
+						const msgCallMongoId = msg.callMongoId || msg.callId;
+						if (msgCallMongoId && msgCallMongoId !== mongoCallId) {
+							return; // Skip messages from other calls
+						}
+					}
+
 					const uniqueId = getMessageId(msg);
 
 					// Skip duplicates
