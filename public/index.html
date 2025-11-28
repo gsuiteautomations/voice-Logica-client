@@ -442,6 +442,17 @@
 						}
 
 						if (data.event && data.data) {
+							// Filter: only show events for current call
+							if (mongoCallId) {
+								const msgCallMongoId = data.data.callMongoId || data.data.callId;
+								if (msgCallMongoId && msgCallMongoId !== mongoCallId) {
+									return; // Skip events from other calls
+								}
+							}
+							// Also filter by callId if available
+							if (callId && data.callId && data.callId !== callId) {
+								return; // Skip events from other calls
+							}
 							// Message from websocket-{callId} or other events
 							addMessage(`Event: ${data.event}`, JSON.stringify(data.data, null, 2), 'received', data.callId ? `Call ID: ${data.callId}` : undefined);
 						} else if (data.message) {
