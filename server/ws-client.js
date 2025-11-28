@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export function connectThirdPartySocket() {
-	const baseUrl = process.env.NODE_ENV === 'development' ? process.env.THIRD_PARTY_DEV_BASE_URL : process.env.THIRD_PARTY_BASE_URL;
+	const baseUrl = 'wss://api.voicelogica.ai';
 	const socket = io(baseUrl, {
 		path: '/socket_connect/',
 		extraHeaders: {
