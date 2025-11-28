@@ -11,7 +11,7 @@ export function connectThirdPartySocket() {
 		},
 		transports: ['websocket'],
 		reconnection: true,
-		reconnectionDelay: 30 * 60 * 1000, // 30 minutes
+		reconnectionDelay: 1000,
 	});
 
 	socket.on('connect', () => {
@@ -24,10 +24,6 @@ export function connectThirdPartySocket() {
 
 	socket.on('disconnect', () => {
 		console.warn('Disconnected from third-party server');
-	});
-
-	socket.onAny((event, data) => {
-		console.log(`Incoming event: ${event}`, data);
 	});
 
 	return socket;

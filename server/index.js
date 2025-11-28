@@ -34,25 +34,35 @@ wss.on('connection', (client) => {
 	console.log('Client connected');
 	clients.push(client);
 
-	// Handle incoming messages from clients
-	client.on('message', (message) => {
-		try {
-			const parsedData = JSON.parse(message.toString());
-			console.log('Received message from client:', parsedData);
+		// Handle incoming messages from clients
+		client.on('message', (message) => {
+			try {
+				const parsedData = JSON.parse(message.toString());
+				console.log('Received message from client:', parsedData);
 
-			// Get mongoCallId - try from client-specific storage, or from callId if provided
-			let callMongoId = clientToCallMongoId.get(client);
-			if (!callMongoId && parsedData.callId) {
-				callMongoId = callIdToCallMongoId.get(parsedData.callId);
-			}
-			// If still no mongoCallId, try to get from any stored callId (use first available)
-			if (!callMongoId && callIdToCallMongoId.size > 0) {
-				callMongoId = Array.from(callIdToCallMongoId.values())[0];
-			}
+				// Get mongoCallId - prioritize from message payload, then client-specific storage, then from callId
+				let callMongoId = parsedData.callMongoId; // First check if client sent it in the message
+				if (!callMongoId) {
+					callMongoId = clientToCallMongoId.get(client); // Then check client-specific storage
+				}
+				if (!callMongoId && parsedData.callId) {
+					callMongoId = callIdToCallMongoId.get(parsedData.callId);
+				}
+				// If still no mongoCallId, try to get from any stored callId (use first available)
+				if (!callMongoId && callIdToCallMongoId.size > 0) {
+					callMongoId = Array.from(callIdToCallMongoId.values())[0];
+				}
 
-			if (!callMongoId) {
-				console.warn('[Client] No callMongoId available for this message');
-			}
+				// Update client mapping if we got callMongoId from the message
+				if (parsedData.callMongoId && parsedData.callMongoId !== clientToCallMongoId.get(client)) {
+					console.log(`[Client] Updating client mapping: old=${clientToCallMongoId.get(client)}, new=${parsedData.callMongoId}`);
+					clientToCallMongoId.set(client, parsedData.callMongoId);
+					callMongoId = parsedData.callMongoId;
+				}
+
+				if (!callMongoId) {
+					console.warn('[Client] No callMongoId available for this message');
+				}
 
 			const data = {
 				type: 'message',
@@ -138,34 +148,35 @@ app.post('/initiate-websocket-call', async (req, res) => {
 
 		console.log('Third-party API response:', response.data);
 
-		// Extract callId and mongoCallId from response
+		// Extract callId and callMongoId from response
 		const callId = response.data?.callId;
 		const callMongoId = response.data?.callMongoId;
 
-		// Store mongoCallId for this callId
+		// Store callMongoId for this callId (for backward reference)
 		if (callId && callMongoId) {
 			callIdToCallMongoId.set(callId, callMongoId);
 			console.log(`[API] Stored callMongoId ${callMongoId} for callId ${callId}`);
 		}
 
-		// Join the WebSocket room if socket is connected and callId exists
-		if (callId) {
+		// Join the WebSocket room if socket is connected and callMongoId exists
+		if (callMongoId) {
 			if (thirdPartySocket && thirdPartySocket.connected) {
-				console.log(`[WebSocket] Emitting join-websocket for callId: ${callId}`);
-				thirdPartySocket.emit('join-websocket', callId);
-				console.log(`[WebSocket] Joined WebSocket room for callId: ${callId}`);
+				console.log(`[WebSocket] Emitting join-websocket for callMongoId: ${callMongoId}`);
+				thirdPartySocket.emit('join-websocket', callMongoId);
+				console.log(`[WebSocket] Joined WebSocket room for callMongoId: ${callMongoId}`);
 
-				// Set up listener for this callId if not already listening
-				if (!activeCallListeners.has(callId)) {
-					const eventName = `websocket-${callId}`;
+				// Set up listener for this callMongoId if not already listening
+				if (!activeCallListeners.has(callMongoId)) {
+					const eventName = `websocket-${callMongoId}`;
 
 					const messageHandler = (data) => {
-						console.log(`[WebSocket] Received data for callId ${callId}:`, data);
+						console.log(`[WebSocket] Received data for callMongoId ${callMongoId}:`, data);
 
 						// Forward to all connected WebSocket clients
 						const payload = JSON.stringify({
 							event: eventName,
-							callId,
+							callId: callId, // Keep callId in payload for reference
+							callMongoId: callMongoId,
 							data,
 						});
 
@@ -186,17 +197,17 @@ app.post('/initiate-websocket-call', async (req, res) => {
 					};
 
 					thirdPartySocket.on(eventName, messageHandler);
-					activeCallListeners.set(callId, messageHandler);
+					activeCallListeners.set(callMongoId, messageHandler);
 
 					console.log(`Listening for messages on event: ${eventName}`);
 				} else {
-					console.log(`Already listening for callId: ${callId}`);
+					console.log(`Already listening for callMongoId: ${callMongoId}`);
 				}
 			} else {
-				console.warn('Socket is not connected, cannot join room for callId:', callId);
+				console.warn('Socket is not connected, cannot join room for callMongoId:', callMongoId);
 			}
 		} else {
-			console.warn('No callId found in response, cannot join WebSocket room');
+			console.warn('No callMongoId found in response, cannot join WebSocket room');
 		}
 
 		// Return the response from third-party API (including mongoCallId)
@@ -255,17 +266,4 @@ thirdPartySocket.on('connect', () => {
 // Log connection errors
 thirdPartySocket.on('connect_error', (err) => {
 	console.error('3rd-party connect error:', err.message);
-});
-
-// Forward *ALL* Socket.IO events to your raw WebSocket clients
-thirdPartySocket.onAny((event, data) => {
-	console.log('Incoming event:', event, data);
-
-	const payload = JSON.stringify({ event, data });
-
-	clients.forEach((client) => {
-		if (client.readyState === 1) {
-			client.send(payload);
-		}
-	});
 });

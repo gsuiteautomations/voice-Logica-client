@@ -90,8 +90,18 @@
 			}
 
 			.message {
-				margin-bottom: 16px;
+				margin-bottom: 20px;
 				animation: slideIn 0.3s ease-out;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.message.sent {
+				align-items: flex-end;
+			}
+
+			.message.received {
+				align-items: flex-start;
 			}
 
 			@keyframes slideIn {
@@ -107,68 +117,112 @@
 
 			.message-header {
 				display: flex;
-				justify-content: space-between;
-				margin-bottom: 4px;
-				font-size: 12px;
-				color: #64748b;
+				justify-content: flex-start;
+				align-items: center;
+				margin-bottom: 6px;
+				font-size: 11px;
+				color: #94a3b8;
+				font-weight: 500;
+				padding: 0 4px;
+			}
+
+			.message-footer {
+				display: flex;
+				justify-content: flex-end;
+				align-items: center;
+				margin-top: 4px;
+				font-size: 10px;
+				color: #94a3b8;
+				font-weight: 400;
+				padding: 0 4px;
 			}
 
 			.message-content {
 				background: white;
-				padding: 12px 16px;
-				border-radius: 12px;
-				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+				padding: 14px 18px;
+				border-radius: 18px;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.08);
 				word-wrap: break-word;
+				line-height: 1.5;
+				font-size: 15px;
+				max-width: 75%;
+				min-width: 120px;
+				position: relative;
 			}
 
 			.message.sent .message-content {
 				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 				color: white;
-				margin-left: auto;
-				max-width: 70%;
+				border-bottom-right-radius: 4px;
 			}
 
 			.message.received .message-content {
-				background: white;
+				background: #ffffff;
 				color: #1e293b;
-				max-width: 70%;
+				border-bottom-left-radius: 4px;
+				border: 1px solid #e2e8f0;
 			}
 
 			.message.agent .message-content {
-				background: #e0f2fe;
-				color: #0c4a6e;
-				border-left: 3px solid #0284c7;
+				background: #f8fafc;
+				color: #0f172a;
+				border: 1px solid #e2e8f0;
+				border-left: 4px solid #3b82f6;
 			}
 
 			.message.tool .message-content {
-				background: #fef3c7;
+				background: #fffbeb;
 				color: #78350f;
-				border-left: 3px solid #f59e0b;
+				border: 1px solid #fde68a;
+				border-left: 4px solid #f59e0b;
 				font-style: italic;
 			}
 
 			.message details {
 				cursor: pointer;
+				margin-top: 6px;
+				font-size: 10px;
+				opacity: 0;
+				transition: opacity 0.2s;
+			}
+
+			.message:hover details {
+				opacity: 0.6;
+			}
+
+			.message details:hover {
+				opacity: 1;
 			}
 
 			.message details summary {
 				user-select: none;
+				color: #94a3b8;
+				font-weight: 500;
+				cursor: pointer;
+			}
+
+			.message details summary:hover {
+				color: #64748b;
 			}
 
 			.message-data {
-				font-family: 'Courier New', monospace;
-				font-size: 11px;
-				background: #f1f5f9;
-				padding: 8px;
-				border-radius: 6px;
+				font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+				font-size: 10px;
+				background: #f8fafc;
+				padding: 10px;
+				border-radius: 8px;
 				margin-top: 8px;
 				overflow-x: auto;
 				white-space: pre-wrap;
 				word-break: break-all;
+				border: 1px solid #e2e8f0;
+				color: #475569;
 			}
 
 			.message.sent .message-data {
-				background: rgba(255, 255, 255, 0.2);
+				background: rgba(255, 255, 255, 0.15);
+				border-color: rgba(255, 255, 255, 0.2);
+				color: rgba(255, 255, 255, 0.9);
 			}
 
 			.input-container {
@@ -218,6 +272,40 @@
 				opacity: 0.5;
 				cursor: not-allowed;
 				transform: none;
+			}
+
+			.restart-container {
+				padding: 20px;
+				background: white;
+				border-top: 1px solid #e2e8f0;
+				display: none;
+				justify-content: center;
+				align-items: center;
+			}
+
+			.restart-container.active {
+				display: flex;
+			}
+
+			.restart-container button {
+				padding: 12px 32px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				border-radius: 12px;
+				font-size: 14px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+
+			.restart-container button:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			}
+
+			.restart-container button:active {
+				transform: translateY(0);
 			}
 
 			.empty-state {
@@ -334,9 +422,13 @@
 					<div class="empty-state" id="emptyState">No messages yet. Start a conversation!</div>
 				</div>
 
-				<div class="input-container">
+				<div class="input-container" id="inputContainer">
 					<input type="text" id="messageInput" placeholder="Type your message here..." disabled />
 					<button id="sendButton" disabled>Send</button>
+				</div>
+
+				<div class="restart-container" id="restartContainer">
+					<button id="restartButton">Restart Conversation</button>
 				</div>
 			</div>
 		</div>
@@ -356,6 +448,9 @@
 			const chatInterface = document.getElementById('chatInterface');
 			const voiceCard = document.getElementById('voiceCard');
 			const chatCard = document.getElementById('chatCard');
+			const inputContainer = document.getElementById('inputContainer');
+			const restartContainer = document.getElementById('restartContainer');
+			const restartButton = document.getElementById('restartButton');
 
 			let messageCount = 0;
 			let mongoCallId = null;
@@ -376,8 +471,12 @@
 
 			// Initialize WebSocket connection
 			function initWebSocket() {
-				if (ws && ws.readyState === WebSocket.OPEN) {
-					return; // Already connected
+				// Close existing connection if any
+				if (ws) {
+					if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+						ws.close();
+					}
+					ws = null;
 				}
 
 				ws = new WebSocket(`${wsProtocol}//${wsHost}`);
@@ -428,22 +527,72 @@
 							return;
 						}
 
-						// Handle messages array - check all possible locations
-						let messagesArray = null;
-						if (data.messages && Array.isArray(data.messages)) {
-							messagesArray = data.messages;
-						} else if (data.data && data.data.messages && Array.isArray(data.data.messages)) {
-							messagesArray = data.data.messages;
-						}
-
-						if (messagesArray) {
-							displayMessagesArray(messagesArray);
-							return; // Exit early after processing messages
-						}
-
+						// Handle single message from websocket-{callMongoId} events
 						if (data.event && data.data) {
-							// Message from websocket-{callId} or other events
-							addMessage(`Event: ${data.event}`, JSON.stringify(data.data, null, 2), 'received', data.callId ? `Call ID: ${data.callId}` : undefined);
+							// Check if data.data is a message object that should be displayed
+							if (data.data.type === 'message' && data.data.content) {
+								// Check for duplicates before displaying
+								const uniqueId = getMessageId(data.data);
+								if (displayedMessages.has(uniqueId)) {
+									console.log('Skipping duplicate message');
+									return;
+								}
+								displayedMessages.add(uniqueId);
+
+								// Display as a proper message with role-based styling
+								const msg = data.data;
+								const role = msg.role || 'Unknown';
+								const content = msg.content || '';
+								const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+								let messageType = 'received';
+								let roleLabel = role;
+
+								if (role === 'Associate') {
+									messageType = 'sent';
+									roleLabel = 'You';
+								} else if (role === 'Agent') {
+									roleLabel = 'Agent';
+								} else if (role === 'Tool') {
+									roleLabel = 'System';
+								}
+
+								// Display single message
+								addMessageWithRole(content, messageType, roleLabel, timestamp, '', msg);
+								return; // Exit early after processing message
+							} else if (data.data.type) {
+								// Handle other event types (disconnect, etc.) - display professionally
+								const eventType = data.data.type;
+								let eventMessage = '';
+								let messageType = 'info';
+
+								if (eventType === 'disconnect') {
+									eventMessage = 'Call disconnected';
+									messageType = 'warning';
+									// Hide input container and show restart button
+									inputContainer.style.display = 'none';
+									restartContainer.classList.add('active');
+									messageInput.disabled = true;
+									sendButton.disabled = true;
+								} else if (eventType === 'connect') {
+									eventMessage = 'Call connected';
+									messageType = 'info';
+								} else {
+									// For other event types, show a clean message
+									eventMessage = `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} event`;
+									messageType = 'info';
+								}
+
+								// Display as a professional system message
+								addSystemMessage(eventMessage, messageType);
+								return;
+							} else {
+								// Fallback: display as raw data (for debugging)
+								addMessage(`Event: ${data.event}`, JSON.stringify(data.data, null, 2), 'received', data.callId ? `Call ID: ${data.callId}` : undefined);
+							}
+						} else if (data.messages && Array.isArray(data.messages)) {
+							// Handle messages array if it comes directly (backward compatibility)
+							displayMessagesArray(data.messages);
 						} else if (data.message) {
 							// Simple text message
 							addMessage(data.message, null, 'received');
@@ -489,22 +638,33 @@
 					const data = await response.json();
 					console.log('API Response:', data);
 
-					// Store response data
-					mongoCallId = data.callMongoId || data.mongoCallId || data.mongoId || data._id;
-					callId = data.callId || data.id || data.connectionId;
+					// Store response data - use the new callMongoId from API response
+					const newCallMongoId = data.callMongoId || data.mongoCallId || data.mongoId || data._id;
+					const newCallId = data.callId || data.id || data.connectionId;
+
+					// Update call IDs with new values
+					mongoCallId = newCallMongoId;
+					callId = newCallId;
 					serviceType = serviceTypeValue;
+
+					console.log('Updated callMongoId:', mongoCallId, 'callId:', callId);
 
 					// Hide card selection and show chat interface
 					cardSelection.style.display = 'none';
 					chatInterface.classList.add('active');
 
-					// Initialize WebSocket connection
-					initWebSocket();
+					// Show input container and hide restart button
+					inputContainer.style.display = 'flex';
+					restartContainer.classList.remove('active');
+
+					// Initialize WebSocket connection if not already connected
+					if (!ws || ws.readyState !== WebSocket.OPEN) {
+						initWebSocket();
+					}
 
 					// Show success message
 					addSystemMessage(`Successfully started ${serviceTypeValue === 'websocket' ? 'Voice' : 'Chat'} conversation`);
 					updateStatus('connected', 'Connected');
-
 				} catch (error) {
 					console.error('Error initiating call:', error);
 					updateStatus('disconnected', 'Error');
@@ -514,16 +674,75 @@
 				}
 			}
 
+			// Restart conversation
+			async function restartConversation() {
+				try {
+					// Clear all messages
+					messagesContainer.innerHTML = '<div class="empty-state" id="emptyState">No messages yet. Start a conversation!</div>';
+					// Re-reference emptyState after clearing
+					const emptyStateEl = document.getElementById('emptyState');
+					if (emptyStateEl) {
+						emptyStateEl.style.display = 'block';
+					}
+
+					// Clear displayed messages tracking
+					displayedMessages.clear();
+					messageCount = 0;
+
+					// Reset call IDs
+					mongoCallId = null;
+					callId = null;
+
+					// Close existing WebSocket connection if any
+					if (ws) {
+						ws.close();
+						ws = null;
+					}
+
+					// Hide restart button and show input container
+					restartContainer.classList.remove('active');
+					inputContainer.style.display = 'flex';
+
+					// Re-initiate call with stored serviceType
+					if (serviceType) {
+						await initiateCall(serviceType);
+					} else {
+						// If no serviceType stored, go back to card selection
+						cardSelection.style.display = 'flex';
+						chatInterface.classList.remove('active');
+						restartContainer.classList.remove('active');
+						inputContainer.style.display = 'flex';
+					}
+				} catch (error) {
+					console.error('Error restarting conversation:', error);
+					// Re-reference emptyState for error message
+					const emptyStateEl = document.getElementById('emptyState');
+					if (emptyStateEl) {
+						emptyStateEl.style.display = 'none';
+					}
+					addSystemMessage(`Failed to restart conversation: ${error.message}`, 'error');
+				}
+			}
+
+			// Attach restart button click handler
+			restartButton.addEventListener('click', restartConversation);
+
 			// Send message (sends as call-data to third-party socket)
 			function sendMessage() {
 				const message = messageInput.value.trim();
 				if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
 
 				// Create call data payload with the text message
+				// Include callMongoId if available to ensure server uses the correct one
 				const callData = {
 					text: message,
 					timestamp: new Date().toISOString(),
 				};
+
+				// Include callMongoId if we have it (helps server route correctly)
+				if (mongoCallId) {
+					callData.callMongoId = mongoCallId;
+				}
 
 				ws.send(JSON.stringify(callData));
 				messageInput.value = '';
@@ -560,13 +779,8 @@
 						roleLabel = 'System';
 					}
 
-					let additionalInfo = '';
-					if (msg.seconds !== undefined) additionalInfo += `Seconds: ${msg.seconds} | `;
-					if (msg.completionTurnMs !== undefined) additionalInfo += `Completion: ${msg.completionTurnMs}ms | `;
-					if (msg.voiceTurnMs !== undefined) additionalInfo += `Voice: ${msg.voiceTurnMs}ms | `;
-					if (msg.totalTurnMs !== undefined) additionalInfo += `Total: ${msg.totalTurnMs}ms`;
-
-					addMessageWithRole(content, messageType, roleLabel, timestamp, additionalInfo, msg);
+					// No additional info needed - display message directly
+					addMessageWithRole(content, messageType, roleLabel, timestamp, '', msg);
 				});
 			}
 
@@ -586,57 +800,37 @@
 				}
 				messageDiv.className = className;
 
+				// Create message wrapper for better alignment
+				const messageWrapper = document.createElement('div');
+				messageWrapper.style.display = 'flex';
+				messageWrapper.style.flexDirection = 'column';
+				messageWrapper.style.maxWidth = '75%';
+
 				const header = document.createElement('div');
 				header.className = 'message-header';
 
-				const eventInfo = document.createElement('span');
-				eventInfo.textContent = metadata || (type === 'sent' ? 'You' : 'Server');
+				const senderInfo = document.createElement('span');
+				senderInfo.style.fontWeight = '600';
+				senderInfo.style.color = type === 'sent' ? '#667eea' : '#64748b';
+				senderInfo.textContent = metadata || (type === 'sent' ? 'You' : 'Server');
 
-				const timeInfo = document.createElement('span');
-				timeInfo.textContent = timestamp;
-
-				header.appendChild(eventInfo);
-				header.appendChild(timeInfo);
+				header.appendChild(senderInfo);
 
 				const content = document.createElement('div');
 				content.className = 'message-content';
 				content.textContent = text;
 
-				messageDiv.appendChild(header);
-				messageDiv.appendChild(content);
+				const footer = document.createElement('div');
+				footer.className = 'message-footer';
+				const timeInfo = document.createElement('span');
+				timeInfo.textContent = timestamp;
+				footer.appendChild(timeInfo);
 
-				// Add additional info if available
-				if (additionalInfo) {
-					const infoDiv = document.createElement('div');
-					infoDiv.className = 'message-data';
-					infoDiv.style.fontSize = '10px';
-					infoDiv.style.opacity = '0.7';
-					infoDiv.textContent = additionalInfo.trim();
-					messageDiv.appendChild(infoDiv);
-				}
+				messageWrapper.appendChild(header);
+				messageWrapper.appendChild(content);
+				messageWrapper.appendChild(footer);
 
-				// Add full message data in collapsed format
-				if (fullMessage) {
-					const dataDiv = document.createElement('details');
-					dataDiv.className = 'message-data';
-					dataDiv.style.marginTop = '4px';
-
-					const summary = document.createElement('summary');
-					summary.textContent = 'View details';
-					summary.style.cursor = 'pointer';
-					summary.style.fontSize = '10px';
-					summary.style.opacity = '0.7';
-
-					const pre = document.createElement('pre');
-					pre.textContent = JSON.stringify(fullMessage, null, 2);
-					pre.style.fontSize = '10px';
-					pre.style.marginTop = '4px';
-
-					dataDiv.appendChild(summary);
-					dataDiv.appendChild(pre);
-					messageDiv.appendChild(dataDiv);
-				}
-
+				messageDiv.appendChild(messageWrapper);
 				messagesContainer.appendChild(messageDiv);
 				messagesContainer.scrollTop = messagesContainer.scrollHeight;
 			}
@@ -684,23 +878,49 @@
 			}
 
 			// Add system message
-			function addSystemMessage(text, type = 'info') {
+			function addSystemMessage(text, type = 'info', metadata = null) {
 				const messageDiv = document.createElement('div');
 				messageDiv.className = 'message received';
-				messageDiv.style.opacity = '0.7';
+				messageDiv.style.opacity = '0.9';
+				messageDiv.style.alignItems = 'center';
+
+				const messageWrapper = document.createElement('div');
+				messageWrapper.style.display = 'flex';
+				messageWrapper.style.flexDirection = 'column';
+				messageWrapper.style.width = '100%';
+				messageWrapper.style.maxWidth = '100%';
 
 				const header = document.createElement('div');
 				header.className = 'message-header';
-				header.innerHTML = `<span>System</span><span>${new Date().toLocaleTimeString()}</span>`;
+				header.style.justifyContent = 'center';
+				header.style.marginBottom = '6px';
+
+				const senderInfo = document.createElement('span');
+				senderInfo.style.fontWeight = '600';
+				senderInfo.style.color = '#64748b';
+				senderInfo.textContent = metadata || 'System';
+
+				const timeInfo = document.createElement('span');
+				timeInfo.textContent = new Date().toLocaleTimeString();
+				timeInfo.style.fontWeight = '400';
+
+				header.appendChild(senderInfo);
+				header.appendChild(document.createTextNode(' • '));
+				header.appendChild(timeInfo);
 
 				const content = document.createElement('div');
 				content.className = 'message-content';
 				content.textContent = text;
-				content.style.background = type === 'error' ? '#fee2e2' : '#e0e7ff';
-				content.style.color = type === 'error' ? '#991b1b' : '#4338ca';
+				content.style.background = type === 'error' ? '#fee2e2' : type === 'warning' ? '#fef3c7' : '#f1f5f9';
+				content.style.color = type === 'error' ? '#991b1b' : type === 'warning' ? '#92400e' : '#475569';
+				content.style.border = type === 'error' ? '1px solid #fecaca' : type === 'warning' ? '1px solid #fde68a' : '1px solid #e2e8f0';
+				content.style.maxWidth = '100%';
+				content.style.textAlign = 'center';
+				content.style.fontWeight = '500';
 
-				messageDiv.appendChild(header);
-				messageDiv.appendChild(content);
+				messageWrapper.appendChild(header);
+				messageWrapper.appendChild(content);
+				messageDiv.appendChild(messageWrapper);
 				messagesContainer.appendChild(messageDiv);
 				messagesContainer.scrollTop = messagesContainer.scrollHeight;
 			}
