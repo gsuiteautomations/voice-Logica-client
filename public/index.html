@@ -584,7 +584,7 @@
 					if (msg.completionTurnMs !== undefined) additionalInfo += `Completion: ${msg.completionTurnMs}ms | `;
 					if (msg.voiceTurnMs !== undefined) additionalInfo += `Voice: ${msg.voiceTurnMs}ms | `;
 					if (msg.totalTurnMs !== undefined) additionalInfo += `Total: ${msg.totalTurnMs}ms`;
-
+					console.log('msg', msg);
 					addMessageWithRole(content, messageType, roleLabel, timestamp, additionalInfo, msg);
 				});
 			}
