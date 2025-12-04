@@ -81,7 +81,7 @@ wss.on('connection', (client) => {
 			// Handle call-data messages - forward to third-party socket
 			if (thirdPartySocket && thirdPartySocket.connected) {
 				console.log(`[Client] Sending call-data to third-party socket:`, data);
-				thirdPartySocket.emit('call-data', data);
+				thirdPartySocket.emit('calldata', data);
 			} else {
 				console.warn('[Client] Cannot send call-data: third-party socket not connected');
 				// Send error back to client
