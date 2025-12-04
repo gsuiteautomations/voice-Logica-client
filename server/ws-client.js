@@ -5,12 +5,12 @@ dotenv.config();
 export function connectThirdPartySocket() {
 	const baseUrl = 'wss://api.voicelogica.ai';
 	const apiKey = process.env.THIRD_PARTY_API_KEY;
-	
+
 	if (!apiKey) {
 		console.error('⚠️ THIRD_PARTY_API_KEY is not set in environment variables!');
 		console.error('   Connection will likely fail with authentication errors.');
 	}
-	
+
 	const socket = io(baseUrl, {
 		path: '/socket_connect/',
 		extraHeaders: {
@@ -18,7 +18,7 @@ export function connectThirdPartySocket() {
 		},
 		transports: ['websocket'],
 		reconnection: true,
-		reconnectionDelay: 30 * 60 * 1000, // 30 minutes
+		reconnectionDelay: 1000,
 		timeout: 20000,
 		forceNew: false,
 	});
@@ -43,10 +43,6 @@ export function connectThirdPartySocket() {
 			// Server disconnected the socket, need to reconnect manually
 			socket.connect();
 		}
-	});
-
-	socket.onAny((event, data) => {
-		console.log(`Incoming event: ${event}`, data);
 	});
 
 	return socket;
